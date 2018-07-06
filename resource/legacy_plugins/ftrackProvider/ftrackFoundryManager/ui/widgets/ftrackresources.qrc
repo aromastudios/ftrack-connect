@@ -1,0 +1,15 @@
+<RCC>
+  <qresource>
+    <file>PNG/box.png</file>
+    <file>Logo_vektor_grey_foundry24.png</file>
+    <file>Logo_vektor_grey_foundry.png</file>
+    <file>ftrack-logo-grayscale.png</file>
+    <file>PNG/layers.png</file>
+    <file>PNG/movie.png</file>
+    <file>PNG/signup.png</file>
+    <file>PNG/folder-open.png</file>
+    <file>PNG/home.png</file>
+    <file>PNG/plus.png</file>
+    <file>PNG/arrow-up-alt1.png</file>
+  </qresource>
+</RCC>
