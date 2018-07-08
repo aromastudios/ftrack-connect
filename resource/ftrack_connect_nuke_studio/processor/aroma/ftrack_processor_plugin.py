@@ -6,12 +6,36 @@ import tempfile
 import logging
 
 import nuke
+import hiero
 from clique import Collection
 
 import ftrack_connect_nuke_studio.processor
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
+
+def create_script(node, start_frame, end_frame):
+    print("aroma_debug: create_script")
+
+    (file, path) = tempfile.mkstemp(prefix="hiero_")
+
+    # create a script writer
+    nukeScriptWriter = hiero.core.nuke.ScriptWriter()
+
+    nukeScriptWriter.addNode(node)
+
+    # create a write node
+    writeNodeOutput = 'C:\tmp\shot.mov'
+    writeNode = nuke.WriteNode(writeNodeOutput)
+    writeNode.setKnob("first", start_frame)
+    writeNode.setKnob("last", end_frame)
+
+    # add the write node to the script
+    nukeScriptWriter.addNode(writeNode)
+
+    # write the script to disk
+    scriptPath = 'C:\tmp\script.nk'
+    nukeScriptWriter.writeToDisk(scriptPath)
 
 def create_component():
     ''' Create component callback for nuke write nodes.
@@ -21,7 +45,7 @@ def create_component():
         * component_name, the component which will contain the node result.
 
     '''
-
+    print("aroma_debug: create_component")
     # Import inline to avoid issue where platform.system() is called in
     # requests __init__.py.
     import ftrack_api
@@ -31,17 +55,18 @@ def create_component():
     # Get the current node.
     node = nuke.thisNode()
 
-    asset_id = node['asset_version_id'].value()
+    asset_id = node.node('OUT')['asset_version_id'].value()
     version = session.get('AssetVersion', asset_id)
 
     # Create the component and copy data to the most likely store
-    component = node['component_name'].value()
-    out = node['file'].value()
+    component = node.node('OUT')['component_name'].value()
+    out = node.node('OUT')['file'].value()
 
     prefix = out.split('.')[0] + '.'
     ext = os.path.splitext(out)[-1]
-    start_frame = int(node['first'].value())
-    end_frame = int(node['last'].value())
+    start_frame = int(node.node('OUT')['first'].value())
+    end_frame = int(node.node('OUT')['last'].value())
+
     collection = Collection(
         head=prefix,
         tail=ext,
@@ -53,8 +78,10 @@ def create_component():
         str(collection), data={'name':component}, location='auto'
     )
 
+    create_script(node, start_frame, end_frame)
+    
     session.commit()
-
+    
 
 class ProxyPlugin(ftrack_connect_nuke_studio.processor.ProcessorPlugin):
     '''Generate proxies.'''
@@ -64,6 +91,8 @@ class ProxyPlugin(ftrack_connect_nuke_studio.processor.ProcessorPlugin):
         super(ProxyPlugin, self).__init__(
             *args, **kwargs
         )
+
+        print("aroma_debug: Initialise processor.")
 
         self.session = session
 
@@ -75,7 +104,6 @@ class ProxyPlugin(ftrack_connect_nuke_studio.processor.ProcessorPlugin):
                     'import sys;'
                     'sys.path.append("{path}");'
                     'import ftrack_processor_plugin;'
-                    'ftrack_processor_plugin.create_component()'
                 ).format(path=self.escape_file_path(FILE_PATH))
             },
             'REFORMAT': {
@@ -89,22 +117,26 @@ class ProxyPlugin(ftrack_connect_nuke_studio.processor.ProcessorPlugin):
             )
         )
 
+        
     def prepare_data(self, data):
         '''Return data mapping processed from input *data*.'''
         data = super(ProxyPlugin, self).prepare_data(data)
-
+        print("aroma_debug: prepare_data")
         # Define output file sequence.
         format = '.####.{0}'.format(data['OUT']['file_type'])
         name = self.name.replace('.', '_')
         temporary_path = tempfile.NamedTemporaryFile(
             prefix=name, suffix=format, delete=False
         )
-        data['OUT']['file'] = temporary_path.name.replace('\\', '/')
+        #data['OUT']['file'] = temporary_path.name.replace('\\', '/')
+        
+        data['OUT']['file'] = "C:/tmp/"
 
         return data
 
     def discover(self, event):
         '''Return discover data for *event*.'''
+        print("aroma_debug: discover")
         return {
             'defaults': self.defaults,
             'name': 'AROMA',
@@ -119,6 +151,7 @@ class ProxyPlugin(ftrack_connect_nuke_studio.processor.ProcessorPlugin):
 
     def register(self):
         '''Register processor'''
+        print("aroma_debug: plugin register")
         self.session.event_hub.subscribe(
             'topic=ftrack.processor.discover and '
             'data.object_type=shot',
@@ -133,7 +166,7 @@ class ProxyPlugin(ftrack_connect_nuke_studio.processor.ProcessorPlugin):
 
 def register(session, **kw):
     '''Register plugin. Called when used as an plugin.'''
-    
+    print("aroma_debug: register")
     # Import inline to avoid issue where platform.system() is called in
     # requests __init__.py.
     import ftrack_api

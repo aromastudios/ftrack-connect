@@ -44,7 +44,7 @@ define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
 }
 Root {
  inputs 0
- name /home/ftrack/devel/connector/ftrack-connect-nuke-studio/resource/processors_plugins/proxy.nk
+ name "C:/Program Files/ftrack-connect-package-0.7.6/resource/ftrack_connect_nuke_studio/processor/aroma/script.nk"
  first_frame 0
  last_frame 1322
  lock_range true
